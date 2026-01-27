@@ -94,7 +94,3 @@ Each layer has a single responsibility and depends only on lower layers.
 - **Name**: Required, cannot be empty
 - **Phone**: Optional, must contain only digits (0-9) if provided
 - **Email**: Optional, no format validation
-
-## License
-
-This project is provided as-is for educational purposes.
