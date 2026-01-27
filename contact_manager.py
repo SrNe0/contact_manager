@@ -1,17 +1,3 @@
-"""
-Contact Manager (CLI)
-
-A local CRUD application that manages contacts in memory using a list of
-dictionaries. This module intentionally avoids classes (OOP) and uses
-functions only.
-
-Features:
-- Create: Add a contact
-- Read: List contacts, search by ID
-- Update: Edit contact fields
-- Delete: Remove a contact
-"""
-
 MENU_WIDTH = 50
 NOT_PROVIDED = "Not provided"
 CONFIRM_YES_VALUES = {"yes", "y"}
