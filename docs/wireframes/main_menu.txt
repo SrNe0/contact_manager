@@ -1,0 +1,238 @@
+================================================================================
+                        CONTACT MANAGER - WIREFRAMES
+================================================================================
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 1: MAIN MENU                              │
+└──────────────────────────────────────────────────┘
+
+==================================================
+                 CONTACT MANAGER
+==================================================
+1. Add contact
+2. View all contacts
+3. Search contact
+4. Update contact
+5. Delete contact
+6. Exit
+==================================================
+
+Select option (1-6): █
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 2: ADD CONTACT                            │
+└──────────────────────────────────────────────────┘
+
+--- ADD NEW CONTACT ---
+Name: █
+
+[After entering name: "John Doe"]
+Name: John Doe
+Phone (digits only, optional): █
+
+[After entering phone: "1234567890"]
+Phone (digits only, optional): 1234567890
+Email (optional): █
+
+[After entering email: "john@example.com"]
+Email (optional): john@example.com
+
+Contact 'John Doe' added successfully!
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 3: VIEW ALL CONTACTS (with data)         │
+└──────────────────────────────────────────────────┘
+
+--- ALL CONTACTS ---
+
+[1] John Doe
+    Phone: 1234567890
+    Email: john@example.com
+
+[2] Jane Smith
+    Phone: Not provided
+    Email: jane@example.com
+
+[3] Bob Wilson
+    Phone: 5559876543
+    Email: Not provided
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 3b: VIEW ALL CONTACTS (empty)            │
+└──────────────────────────────────────────────────┘
+
+--- ALL CONTACTS ---
+No contacts found.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 4: SEARCH CONTACT                         │
+└──────────────────────────────────────────────────┘
+
+--- SEARCH CONTACT ---
+Enter contact ID: █
+
+[After entering ID: 1]
+Enter contact ID: 1
+
+ID: 1
+Name: John Doe
+Phone: 1234567890
+Email: john@example.com
+--------------------------------------------------
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 4b: SEARCH CONTACT (not found)           │
+└──────────────────────────────────────────────────┘
+
+--- SEARCH CONTACT ---
+Enter contact ID: 999
+
+Contact with ID 999 not found.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 5: UPDATE CONTACT (Step 1 - Find)        │
+└──────────────────────────────────────────────────┘
+
+--- UPDATE CONTACT ---
+Enter contact ID: █
+
+[After entering ID: 1]
+Enter contact ID: 1
+
+Current information:
+
+ID: 1
+Name: John Doe
+Phone: 1234567890
+Email: john@example.com
+--------------------------------------------------
+
+Enter new values (press Enter to keep current):
+Name: █
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 5: UPDATE CONTACT (Step 2 - Edit)        │
+└──────────────────────────────────────────────────┘
+
+Enter new values (press Enter to keep current):
+Name: John Smith
+Phone (digits only): █
+
+[After entering phone]
+Phone (digits only): 9999999999
+Email: █
+
+[After pressing Enter to keep email]
+Email:
+
+Contact updated successfully!
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 6: DELETE CONTACT (Step 1 - Confirm)     │
+└──────────────────────────────────────────────────┘
+
+--- DELETE CONTACT ---
+Enter contact ID: 1
+
+Contact to delete:
+
+ID: 1
+Name: John Doe
+Phone: 1234567890
+Email: john@example.com
+--------------------------------------------------
+
+Are you sure? (yes/no): █
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 6b: DELETE CONTACT (Confirmed)           │
+└──────────────────────────────────────────────────┘
+
+Are you sure? (yes/no): yes
+
+Contact 'John Doe' deleted.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 6c: DELETE CONTACT (Cancelled)           │
+└──────────────────────────────────────────────────┘
+
+Are you sure? (yes/no): no
+
+Deletion cancelled.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 7: INVALID OPTION                         │
+└──────────────────────────────────────────────────┘
+
+Invalid option. Please select 1-6.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 8: EXIT                                   │
+└──────────────────────────────────────────────────┘
+
+Thank you for using Contact Manager!
+
+
+┌──────────────────────────────────────────────────┐
+│ ERROR STATES                                      │
+└──────────────────────────────────────────────────┘
+
+ERROR 1: Empty Name During Add
+-----------------------------
+--- ADD NEW CONTACT ---
+Name:
+Error: Name cannot be empty.
+
+Press Enter to continue...
+
+
+ERROR 2: Invalid Phone Number
+-----------------------------
+Phone (digits only, optional): abc123
+Error: Phone must contain digits only (0-9).
+Phone (digits only, optional): █
+
+
+ERROR 3: Invalid Integer Input
+-----------------------------
+Enter contact ID: abc
+Error: Please enter a valid integer.
+Enter contact ID: █
+
+
+ERROR 4: No Contacts Available (Search)
+-----------------------------
+--- SEARCH CONTACT ---
+No contacts available.
+
+Press Enter to continue...

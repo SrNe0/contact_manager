@@ -40,9 +40,8 @@ Comprehensive technical documentation is available in the `/docs` folder:
 
 ### Diagrams
 
-- **[Architecture Diagram](docs/diagrams/architecture.puml)** - PlantUML layered architecture diagram
-- **[Sequence Diagrams](docs/diagrams/sequence.puml)** - PlantUML operation flow diagrams
-- **[Database Schema](docs/diagrams/database.puml)** - PlantUML JSON data structure diagram
+- **[Architecture Diagram](docs/diagrams/architecture.png)** - Layered
+architecture diagram
 
 ### Wireframes
 
