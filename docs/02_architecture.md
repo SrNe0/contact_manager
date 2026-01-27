@@ -12,7 +12,7 @@ Esta arquitectura promueve:
 
 ## 2. Diagrama de Arquitectura
 
-Ver: [diagrams/architecture.puml](diagrams/architecture.puml)
+Ver: [diagrams/architecture.puml](diagrams/architecture.png)
 
 ## 3. Descripción de Capas
 
