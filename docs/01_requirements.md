@@ -169,7 +169,7 @@ escritura debe dejar intacto el archivo anterior.
 ### 2.5 Portabilidad
 
 **RNF-013**: El sistema debe ejecutarse en cualquier plataforma con
-Python 3.9 o superior.
+Python 3.12 o superior.
 
 **RNF-014**: El sistema debe usar solo módulos de la biblioteca estándar
 de Python para ejecutarse y probarse (sin dependencias externas).

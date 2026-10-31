@@ -1,6 +1,6 @@
 # Contact Manager CLI
 
-![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
 ![Dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
@@ -52,7 +52,7 @@ Search by ID, name, phone or email: jo
 
 ## Requirements
 
-- Python 3.9 or higher
+- Python 3.12 or higher
 - No external dependencies (uses the Python standard library only)
 
 ## Running the Tests

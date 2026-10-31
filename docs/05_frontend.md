@@ -411,7 +411,7 @@ Email: john@example.com
 ## 13. Requisitos del Terminal
 
 **Requisitos Mínimos**:
-- Python 3.9 o superior
+- Python 3.12 o superior
 - Soporte de códigos de escape ANSI (limpieza de pantalla)
 - Codificación UTF-8 (caracteres internacionales)
 - Flujos estándar de entrada/salida
