@@ -6,18 +6,31 @@
 │ SCREEN 1: MAIN MENU                              │
 └──────────────────────────────────────────────────┘
 
+Welcome to Contact Manager!            (first time only)
+
 ==================================================
                  CONTACT MANAGER
 ==================================================
 1. Add contact
 2. View all contacts
-3. Search contact
+3. Search contacts
 4. Update contact
 5. Delete contact
-6. Exit
+6. Export to CSV
+7. Exit
 ==================================================
 
-Select option (1-6): █
+Select option (1-7): █
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 1b: STARTUP WARNING (damaged file)        │
+└──────────────────────────────────────────────────┘
+
+Warning: contacts.json is damaged and was not loaded. It was kept as
+contacts.json.corrupt-20260131-103000. Starting with an empty list.
+
+Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
@@ -25,17 +38,8 @@ Select option (1-6): █
 └──────────────────────────────────────────────────┘
 
 --- ADD NEW CONTACT ---
-Name: █
-
-[After entering name: "John Doe"]
 Name: John Doe
-Phone (digits only, optional): █
-
-[After entering phone: "1234567890"]
 Phone (digits only, optional): 1234567890
-Email (optional): █
-
-[After entering email: "john@example.com"]
 Email (optional): john@example.com
 
 Contact 'John Doe' added successfully!
@@ -44,7 +48,29 @@ Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 3: VIEW ALL CONTACTS (with data)         │
+│ SCREEN 2b: ADD CONTACT (duplicate warning)       │
+└──────────────────────────────────────────────────┘
+
+--- ADD NEW CONTACT ---
+Name: Johnny
+Phone (digits only, optional): 1234567890
+Email (optional):
+
+Warning: This phone or email is already used by:
+
+[1] John Doe
+    Phone: 1234567890
+    Email: john@example.com
+
+Save anyway? (yes/no): no
+
+Contact not added.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 3: VIEW ALL CONTACTS (with data)          │
 └──────────────────────────────────────────────────┘
 
 --- ALL CONTACTS ---
@@ -65,7 +91,7 @@ Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 3b: VIEW ALL CONTACTS (empty)            │
+│ SCREEN 3b: VIEW ALL CONTACTS (empty)             │
 └──────────────────────────────────────────────────┘
 
 --- ALL CONTACTS ---
@@ -75,44 +101,35 @@ Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 4: SEARCH CONTACT                         │
+│ SCREEN 4: SEARCH CONTACTS                        │
 └──────────────────────────────────────────────────┘
 
---- SEARCH CONTACT ---
-Enter contact ID: █
+--- SEARCH CONTACTS ---
+Search by ID, name, phone or email: jo
 
-[After entering ID: 1]
-Enter contact ID: 1
-
-ID: 1
-Name: John Doe
-Phone: 1234567890
-Email: john@example.com
---------------------------------------------------
+[1] John Doe
+    Phone: 1234567890
+    Email: john@example.com
 
 Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 4b: SEARCH CONTACT (not found)           │
+│ SCREEN 4b: SEARCH CONTACTS (no matches)          │
 └──────────────────────────────────────────────────┘
 
---- SEARCH CONTACT ---
-Enter contact ID: 999
-
-Contact with ID 999 not found.
+--- SEARCH CONTACTS ---
+Search by ID, name, phone or email: zzz
+No contacts match 'zzz'.
 
 Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 5: UPDATE CONTACT (Step 1 - Find)        │
+│ SCREEN 5: UPDATE CONTACT                         │
 └──────────────────────────────────────────────────┘
 
 --- UPDATE CONTACT ---
-Enter contact ID: █
-
-[After entering ID: 1]
 Enter contact ID: 1
 
 Current information:
@@ -123,24 +140,10 @@ Phone: 1234567890
 Email: john@example.com
 --------------------------------------------------
 
-Enter new values (press Enter to keep current):
-Name: █
-
-
-┌──────────────────────────────────────────────────┐
-│ SCREEN 5: UPDATE CONTACT (Step 2 - Edit)        │
-└──────────────────────────────────────────────────┘
-
-Enter new values (press Enter to keep current):
+Enter new values (press Enter to keep current, '-' to clear phone or email):
 Name: John Smith
-Phone (digits only): █
-
-[After entering phone]
 Phone (digits only): 9999999999
-Email: █
-
-[After pressing Enter to keep email]
-Email:
+Email: -
 
 Contact updated successfully!
 
@@ -148,7 +151,20 @@ Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 6: DELETE CONTACT (Step 1 - Confirm)     │
+│ SCREEN 5b: UPDATE CONTACT (nothing entered)      │
+└──────────────────────────────────────────────────┘
+
+Name:
+Phone (digits only):
+Email:
+
+No changes made.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 6: DELETE CONTACT (Step 1 - Confirm)      │
 └──────────────────────────────────────────────────┘
 
 --- DELETE CONTACT ---
@@ -161,12 +177,11 @@ Name: John Doe
 Phone: 1234567890
 Email: john@example.com
 --------------------------------------------------
-
 Are you sure? (yes/no): █
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 6b: DELETE CONTACT (Confirmed)           │
+│ SCREEN 6b: DELETE CONTACT (Confirmed)            │
 └──────────────────────────────────────────────────┘
 
 Are you sure? (yes/no): yes
@@ -177,7 +192,7 @@ Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 6c: DELETE CONTACT (Cancelled)           │
+│ SCREEN 6c: DELETE CONTACT (Cancelled)            │
 └──────────────────────────────────────────────────┘
 
 Are you sure? (yes/no): no
@@ -188,23 +203,34 @@ Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 7: INVALID OPTION                         │
+│ SCREEN 7: EXPORT TO CSV                          │
 └──────────────────────────────────────────────────┘
 
-Invalid option. Please select 1-6.
+--- EXPORT TO CSV ---
+
+3 contact(s) exported to /path/to/project/contacts_export.csv
 
 Press Enter to continue...
 
 
 ┌──────────────────────────────────────────────────┐
-│ SCREEN 8: EXIT                                   │
+│ SCREEN 8: INVALID OPTION                         │
+└──────────────────────────────────────────────────┘
+
+Invalid option. Please select 1-7.
+
+Press Enter to continue...
+
+
+┌──────────────────────────────────────────────────┐
+│ SCREEN 9: EXIT (option 7 or Ctrl+C)              │
 └──────────────────────────────────────────────────┘
 
 Thank you for using Contact Manager!
 
 
 ┌──────────────────────────────────────────────────┐
-│ ERROR STATES                                      │
+│ ERROR STATES                                     │
 └──────────────────────────────────────────────────┘
 
 ERROR 1: Empty Name During Add
@@ -223,16 +249,35 @@ Error: Phone must contain digits only (0-9).
 Phone (digits only, optional): █
 
 
-ERROR 3: Invalid Integer Input
+ERROR 3: Invalid Email
+-----------------------------
+Email (optional): john.example.com
+Error: Email must have the form name@domain.com.
+Email (optional): █
+
+
+ERROR 4: Invalid Contact ID
 -----------------------------
 Enter contact ID: abc
-Error: Please enter a valid integer.
+Error: Please enter a positive whole number.
 Enter contact ID: █
 
 
-ERROR 4: No Contacts Available (Search)
+ERROR 5: No Contacts Available
 -----------------------------
---- SEARCH CONTACT ---
+--- SEARCH CONTACTS ---
 No contacts available.
 
 Press Enter to continue...
+
+
+ERROR 6: Save Failed
+-----------------------------
+Error: Could not save your changes, so they were undone. [Errno 13] Permission denied
+
+Press Enter to continue...
+
+
+ERROR 7: Contacts Cannot Be Read At Startup (app closes)
+-----------------------------
+Error: Could not load your contacts, so the app will close. [Errno 13] Permission denied

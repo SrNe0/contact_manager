@@ -11,7 +11,7 @@ mientras cumple con los requisitos de la aplicación.
 
 **Tecnología**: JSON (JavaScript Object Notation)
 
-**Ubicación del Archivo**: `contacts.json` (directorio raíz)
+**Ubicación del Archivo**: `contacts.json` (raíz del proyecto)
 
 **Método de Acceso**: Módulo `json` de la biblioteca estándar de Python
 
@@ -32,7 +32,7 @@ El archivo JSON contiene un único arreglo de objetos de contacto:
     {
         "id": 2,
         "name": "Jane Smith",
-        "phone": "No proporcionado",
+        "phone": "Not provided",
         "email": "jane@example.com"
     }
 ]
@@ -40,26 +40,25 @@ El archivo JSON contiene un único arreglo de objetos de contacto:
 
 ### 3.2 Esquema de Contacto
 
-| Campo | Tipo    | Requerido | Restricciones         | Valor Predeterminado |
-|-------|---------|-----------|------------------------|----------------------|
-| id    | entero  | Sí        | Único, positivo        | auto-generado        |
-| name  | cadena  | Sí        | No vacío               | N/A                  |
-| phone | cadena  | No        | Solo dígitos o vacío   | "No proporcionado"   |
-| email | cadena  | No        | Cualquier cadena       | "No proporcionado"   |
+| Campo | Tipo   | Requerido | Restricciones             | Valor Predeterminado |
+|-------|--------|-----------|---------------------------|----------------------|
+| id    | entero | Sí        | Único, positivo           | auto-generado        |
+| name  | cadena | Sí        | No vacío                  | N/A                  |
+| phone | cadena | No        | Solo dígitos 0-9          | "Not provided"       |
+| email | cadena | No        | Forma `nombre@dominio.tld` | "Not provided"      |
 
 ### 3.3 Descripción de Campos
 
 **id**:
 
 - Identificador único para cada contacto
-- Generado usando estrategia max(ids_existentes) + 1
-- Nunca reutilizado incluso después de eliminación
+- Generado usando la estrategia max(ids_existentes) + 1
 - Tipo: entero positivo comenzando desde 1
 
 **name**:
 
 - Nombre completo del contacto
-- No puede estar vacío (validado en la entrada)
+- No puede estar vacío
 - Tipo: cadena
 - Sin restricciones de longitud
 
@@ -67,65 +66,61 @@ El archivo JSON contiene un único arreglo de objetos de contacto:
 
 - Número de teléfono del contacto
 - Almacenado como cadena para preservar ceros a la izquierda
-- Debe contener solo dígitos (0-9) si se proporciona
-- Almacenado como "No proporcionado" si se deja vacío
+- Debe contener solo dígitos (0-9) si se ingresa
+- Almacenado como "Not provided" si se deja vacío
 - Tipo: cadena
 
 **email**:
 
 - Dirección de correo electrónico del contacto
-- Sin validación de formato aplicada
-- Almacenado como "No proporcionado" si se deja vacío
+- Debe tener la forma `nombre@dominio.tld` si se ingresa
+- Almacenado como "Not provided" si se deja vacío
 - Tipo: cadena
+
+Las reglas de formato se aplican a lo que el usuario ingresa. Un valor
+existente en el archivo se conserva aunque no cumpla el formato actual.
 
 ## 4. Operaciones de Base de Datos
 
 ### 4.1 Cargar Contactos
 
-**Función**: `load_contacts()`
+**Función**: `load_contacts(path=JSON_FILE_PATH)`
 
 **Ubicación**: `app/db/json_store.py`
 
-**Algoritmo**:
+**Retorna**: Tupla `(contactos, advertencia)`. La advertencia es `None`
+si no hubo problemas.
 
-1. Verificar si `contacts.json` existe
-2. Si no existe: retornar lista vacía `[]`
-3. Si existe: abrir archivo y parsear JSON
-4. Validar que el elemento raíz sea un arreglo
-5. Retornar arreglo de diccionarios de contacto
-
-**Manejo de Errores**:
-
-- Archivo faltante → retorna `[]`
-- JSON inválido → imprime error, retorna `[]`
-- Raíz no es arreglo → imprime advertencia, retorna `[]`
-- Error de permisos → imprime error, retorna `[]`
+| Situación | Resultado |
+|-----------|-----------|
+| El archivo no existe | Lista vacía, sin advertencia |
+| JSON válido con registros correctos | Lista de contactos, sin advertencia |
+| Faltan campos opcionales, o el ID falta, es inválido o está repetido | Se repara al cargar, sin advertencia |
+| Algunos registros no son recuperables (sin nombre o no son objetos) | Respaldo del original, se guardan los válidos y se advierte |
+| JSON inválido, codificación inválida o raíz que no es un arreglo | Respaldo del original, lista vacía y advertencia |
+| El archivo no se puede leer, respaldar o reparar | Lanza `OSError`; la aplicación se cierra |
 
 **Rendimiento**: O(n) donde n = número de contactos
 
 ### 4.2 Guardar Contactos
 
-**Función**: `save_contacts(contacts)`
+**Función**: `save_contacts(contacts, path=JSON_FILE_PATH)`
 
 **Ubicación**: `app/db/json_store.py`
 
 **Algoritmo**:
 
-1. Abrir `contacts.json` para escritura
-2. Serializar lista de contactos a JSON con indentación
-3. Escribir al archivo con codificación UTF-8
-4. Retornar estado de éxito
+1. Serializar la lista completa a texto JSON
+2. Escribirla en un archivo temporal en el mismo directorio
+3. Forzar la escritura a disco con `os.fsync`
+4. Reemplazar `contacts.json` con `os.replace`, una operación atómica
+5. Si algo falla: eliminar el temporal y relanzar la excepción
 
-**Parámetros**:
+**Garantía**: `contacts.json` siempre contiene la versión anterior completa
+o la nueva completa, nunca una escritura parcial.
 
-- `contacts`: Lista de diccionarios de contacto
-
-**Retorna**: Booleano (True si exitoso, False de lo contrario)
-
-**Manejo de Errores**:
-
-- Error de escritura → imprime error, retorna False
-- Error de permisos → imprime error, retorna False
+**Manejo de Errores**: Lanza `OSError`. El flujo que la llamó muestra el
+error y conserva la lista anterior.
 
 **Rendimiento**: O(n) donde n = número de contactos
 
@@ -134,7 +129,21 @@ El archivo JSON contiene un único arreglo de objetos de contacto:
 - Indentación de 4 espacios para legibilidad
 - Codificación UTF-8 con `ensure_ascii=False` para caracteres
 internacionales
-- Formato embellecido para edición manual
+
+### 4.3 Exportar a CSV
+
+**Función**: `export_contacts_csv(contacts, path=CSV_EXPORT_PATH)`
+
+**Ubicación**: `app/db/csv_export.py`
+
+**Formato**:
+
+- Archivo `contacts_export.csv` en la raíz del proyecto; cada exportación
+reemplaza a la anterior
+- Columnas: `id`, `name`, `phone`, `email`
+- UTF-8 con BOM, para que Excel muestre bien los acentos
+- El texto que empieza con `=`, `+`, `-`, `@`, tabulación o retorno de carro
+se antepone con `'`, para que una hoja de cálculo no lo ejecute como fórmula
 
 ## 5. Justificación de JSON vs Base de Datos
 
@@ -144,8 +153,7 @@ internacionales
 
 1. **Cero Dependencias**: No se requiere instalación de servidor de base
 de datos o driver
-2. **Portabilidad**: Un solo archivo puede copiarse, respaldarse o
-versionarse
+2. **Portabilidad**: Un solo archivo puede copiarse o respaldarse
 3. **Legible por Humanos**: Los archivos JSON pueden editarse e
 inspeccionarse manualmente
 4. **Simplicidad**: Sin migraciones de esquema, sin gestión de
@@ -157,18 +165,16 @@ es confiable
 
 **Compromisos Aceptados**:
 
-1. **Sin Acceso Concurrente**: Múltiples usuarios no pueden editar
-simultáneamente
+1. **Sin Acceso Concurrente**: Si dos procesos escriben, gana el último
 2. **Cargar Todo o Nada**: El archivo completo se carga en memoria
 3. **Sin Indexación**: La búsqueda requiere escaneo lineal
 4. **Sin Relaciones**: Sin claves foráneas o joins
-5. **Bloqueo de Archivos**: Sin soporte de transacciones integrado
 
 ### 5.2 Cuándo Este Enfoque Es Apropiado
 
 Este enfoque basado en JSON es apropiado cuando:
 
-- La base de usuarios es de un solo usuario o equipo pequeño
+- La aplicación tiene un solo usuario
 - El tamaño del conjunto de datos es menor a 100,000 registros
 - No se requiere acceso de escritura concurrente
 - La portabilidad es más importante que el rendimiento
@@ -180,8 +186,8 @@ Si la aplicación necesita escalar, la capa de base de datos puede
 reemplazarse:
 
 1. Crear nuevo módulo: `app/db/sql_store.py`
-2. Implementar la misma interfaz: `load_contacts()`, `save_contacts()`
-3. Actualizar imports en `app/main.py`
+2. Implementar las mismas funciones: `load_contacts()`, `save_contacts()`
+3. Actualizar imports en `app/main.py` y `app/interface/contact_flows.py`
 4. La capa de servicios no requiere cambios
 
 ## 6. Integridad de Datos
@@ -194,44 +200,42 @@ reemplazarse:
 
 ```python
 def generate_id(contacts):
-    if not contacts:
-        return 1
-    return max(contact["id"] for contact in contacts) + 1
+    return max((contact["id"] for contact in contacts), default=0) + 1
 ```
 
 **Garantías**:
 
-- Los IDs son siempre únicos
-- Los IDs nunca se reutilizan después de eliminación
-- Los IDs son secuenciales (con espacios después de eliminaciones)
+- Un ID nuevo nunca coincide con el de un contacto existente
+- Los IDs pueden tener espacios después de eliminaciones
+- Si se elimina el contacto con el ID más alto, ese ID se puede volver a
+asignar, porque el formato del archivo no guarda un historial de IDs
 
 ### 6.2 Validación de Datos
 
 **En Entrada**:
 
-- Nombre: requerido, no vacío (validado por interfaz)
-- Teléfono: solo dígitos si se proporciona (validado por interfaz)
-- Email: sin validación (aceptado tal cual)
+- Nombre: requerido, no vacío
+- Teléfono: solo dígitos 0-9 si se ingresa
+- Email: forma `nombre@dominio.tld` si se ingresa
 
-**En Almacenamiento**:
+**Al Cargar**:
 
-- Sin validación adicional (confiar en la capa de servicio)
-- La normalización aplica valores predeterminados ("No proporcionado")
+- `normalize_contacts()` completa campos opcionales y repara IDs
+- Los registros sin nombre válido se descartan, con respaldo del original
 
 ### 6.3 Respaldo y Recuperación
+
+**Respaldo Automático**: Un archivo dañado se mueve a
+`contacts.json.corrupt-AAAAMMDD-HHMMSS` en la misma carpeta.
+
+**Recuperación**: Corrija el respaldo con un editor y cámbiele el nombre a
+`contacts.json` con la aplicación cerrada.
 
 **Respaldo Manual**:
 
 ```bash
 cp contacts.json contacts.backup.json
 ```
-
-**Recuperación de Corrupción**:
-
-- La aplicación detecta JSON inválido
-- Comienza con lista de contactos vacía
-- Muestra mensaje de error al usuario
-- El usuario puede restaurar desde respaldo manualmente
 
 ## 7. Características de Rendimiento
 
@@ -240,23 +244,12 @@ cp contacts.json contacts.backup.json
 | Cargar Todo      | O(n)                 | O(n)                 |
 | Guardar Todo     | O(n)                 | O(n)                 |
 | Buscar por ID    | O(n)                 | O(1)                 |
-| Agregar Contacto | O(1) + O(n)          | O(n)                 |
-| Actualizar       | O(n) + O(n)          | O(n)                 |
-| Eliminar         | O(n) + O(n)          | O(n)                 |
-
-| Operación        | Notas                       |
-|------------------|-----------------------------|
-| Cargar Todo      | Parsea JSON completo        |
-| Guardar Todo     | Serializa lista completa    |
-| Buscar por ID    | Búsqueda lineal en memoria  |
-| Agregar Contacto | Agregar + guardar           |
-| Actualizar       | Buscar + guardar            |
-| Eliminar         | Buscar + remover + guardar  |
+| Buscar por texto | O(n)                 | O(n)                 |
+| Agregar Contacto | O(n)                 | O(n)                 |
+| Actualizar       | O(n)                 | O(n)                 |
+| Eliminar         | O(n)                 | O(n)                 |
 
 **Cuello de Botella**: E/S de archivo durante operaciones de guardado
-
-**Optimización**: Las operaciones de guardado podrían ser diferidas o
-agrupadas para múltiples cambios
 
 ## 8. Ejemplo de Archivo JSON
 
@@ -279,33 +272,31 @@ agrupadas para múltiples cambios
     {
         "id": 2,
         "name": "Bob Wilson",
-        "phone": "No proporcionado",
+        "phone": "Not provided",
         "email": "bob@work.com"
     },
     {
         "id": 5,
         "name": "Carol Martínez",
         "phone": "5559876543",
-        "email": "No proporcionado"
+        "email": "Not provided"
     }
 ]
 ```
 
-**Nota**: Los IDs 3 y 4 faltantes indican contactos eliminados (los IDs
-nunca se reutilizan)
+**Nota**: Los IDs 3 y 4 faltantes indican contactos eliminados.
 
 ## 9. Ubicación y Nombre del Archivo
 
 **Nombre del Archivo**: `contacts.json`
 
-**Ubicación**: Directorio raíz de la aplicación (mismo nivel que la
-carpeta `app/`)
+**Ubicación**: Raíz del proyecto (mismo nivel que la carpeta `app/`). La
+ruta se calcula con `pathlib` desde `settings.py`, así que no depende del
+directorio de ejecución.
 
-**Justificación**:
-
-- Ubicación simple y predecible
-- Fácil de encontrar para respaldo
-- Compatible con control de versiones (puede ser .gitignored)
+**Control de Versiones**: `contacts.json`, sus respaldos y
+`contacts_export.csv` están en `.gitignore`, porque contienen datos
+personales.
 
 ## 10. Codificación de Caracteres
 
@@ -314,12 +305,5 @@ carpeta `app/`)
 **Por qué**: Soporta caracteres internacionales en nombres y correos
 electrónicos
 
-**Implementación**:
-
-```python
-with open(JSON_FILE_PATH, "r", encoding="utf-8") as file:
-    # Operación de lectura
-
-with open(JSON_FILE_PATH, "w", encoding="utf-8") as file:
-    json.dump(contacts, file, indent=4, ensure_ascii=False)
-```
+**Implementación**: `json.load` lee con `encoding="utf-8"` y `save_contacts`
+escribe con `encoding="utf-8"` y `ensure_ascii=False`.

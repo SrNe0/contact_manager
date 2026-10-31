@@ -2,18 +2,24 @@
 
 ## 1. Resumen
 
-La capa de backend consiste en **servicios de lógica de negocio** que implementan operaciones CRUD y aplican reglas de negocio. Esta capa orquesta operaciones entre las capas de base de datos, modelos e interfaz.
+El backend está formado por **servicios de lógica de negocio puros** que implementan las operaciones CRUD y aplican las reglas de negocio, y por la **capa de datos** que los persiste. Los servicios no leen la consola, no imprimen y no acceden a archivos. Los flujos de `app/interface/contact_flows.py` los conectan con el usuario y con el almacenamiento.
 
 ## 2. Arquitectura de la Capa de Servicios
 
 **Ubicación**: `app/services/contacts_service.py`
 
 **Responsabilidades**:
-- Implementar toda la lógica de negocio
-- Coordinar entre capas
+- Implementar las operaciones CRUD y la búsqueda
 - Aplicar reglas de validación
 - Generar IDs únicos
-- Gestionar el ciclo de vida de contactos
+- Detectar teléfonos y correos en uso
+
+**Convenciones**:
+- Las funciones retornan listas nuevas y no modifican las que reciben
+- Los datos inválidos lanzan `ValueError`
+- Un ID inexistente lanza `LookupError`
+
+Esta forma de trabajar hace que deshacer un cambio sea trivial: si falla el guardado, el flujo sigue usando la lista anterior.
 
 ## 3. Funciones de Negocio Principales
 
@@ -21,416 +27,331 @@ La capa de backend consiste en **servicios de lógica de negocio** que implement
 
 **Función**: `generate_id(contacts)`
 
-**Propósito**: Genera IDs de contacto únicos y secuenciales.
-
-**Algoritmo**:
 ```python
 def generate_id(contacts):
-    if not contacts:
-        return 1
-    return max(contact["id"] for contact in contacts) + 1
+    return max((contact["id"] for contact in contacts), default=0) + 1
 ```
 
 **Reglas de Negocio**:
 - El primer contacto obtiene ID = 1
 - Los IDs subsiguientes son max(existentes) + 1
-- Los IDs nunca se reutilizan después de eliminación
-- Los espacios en la secuencia indican contactos eliminados
-
-**Complejidad Temporal**: O(n)
+- Un ID nuevo nunca coincide con el de un contacto existente
 
 **Ejemplo de Secuencia**:
 - Inicio: `[]` → ID = 1
-- Después de agregar: `[{id:1}]` → siguiente ID = 2
 - Después de agregar: `[{id:1}, {id:2}]` → siguiente ID = 3
-- Después de eliminar ID 1: `[{id:2}]` → siguiente ID = 3 (no 2)
+- Después de eliminar ID 1: `[{id:2}]` → siguiente ID = 3
+- Después de eliminar ID 2: `[]` → siguiente ID = 1 (se reasigna)
 
-### 3.2 Búsqueda de Contacto
+### 3.2 Búsqueda por ID
 
-**Función**: `find_contact_index_by_id(contacts, contact_id)`
+**Función**: `find_contact_by_id(contacts, contact_id)`
 
-**Propósito**: Localiza la posición de un contacto en la lista por ID.
-
-**Algoritmo**:
-```python
-def find_contact_index_by_id(contacts, contact_id):
-    for index, contact in enumerate(contacts):
-        if contact["id"] == contact_id:
-            return index
-    return -1
-```
-
-**Parámetros**:
-- `contacts`: Lista de diccionarios de contacto
-- `contact_id`: ID entero a buscar
-
-**Retorna**:
-- Índice (basado en 0) si se encuentra
-- -1 si no se encuentra
+**Retorna**: El contacto si se encuentra, o `None`.
 
 **Complejidad Temporal**: O(n)
 
-**Uso**: Usado por operaciones de búsqueda, actualización y eliminación
+### 3.3 Búsqueda por Texto
+
+**Función**: `search_contacts(contacts, query)`
+
+**Reglas**:
+- Coincide con el ID exacto, o con parte del nombre, teléfono o email
+- No distingue mayúsculas de minúsculas (`casefold`)
+- El texto "Not provided" nunca coincide
+- Una búsqueda vacía retorna una lista vacía
+
+### 3.4 Detección de Duplicados
+
+**Función**: `find_duplicates(contacts, phone, email, exclude_id)`
+
+**Reglas**:
+- Compara el teléfono exacto y el email sin distinguir mayúsculas
+- Ignora los valores vacíos
+- `exclude_id` omite el contacto que se está actualizando
+
+La detección solo advierte. La decisión de guardar es del usuario, porque dos contactos pueden compartir un teléfono real.
 
 ## 4. Operaciones CRUD
 
 ### 4.1 Crear Contacto
 
-**Función**: `add_contact(contacts)`
+**Servicio**: `add_contact(contacts, name, phone="", email="")` → `(lista_nueva, contacto)`
+
+**Flujo**: `add_contact_flow(contacts)`
 
 **Historia de Usuario**: Como usuario, quiero agregar un nuevo contacto con nombre, teléfono y correo electrónico.
 
 **Flujo de Trabajo**:
-1. Mostrar encabezado de sección
-2. Solicitar nombre (requerido)
-3. Validar que el nombre no esté vacío
-4. Solicitar teléfono (opcional, solo dígitos)
-5. Solicitar correo electrónico (opcional, cualquier cadena)
-6. Generar nuevo ID único
-7. Crear diccionario de contacto usando capa de modelo
-8. Agregar a lista de contactos
-9. Guardar en archivo JSON
-10. Mostrar mensaje de éxito
-
-**Reglas de Validación**:
-- Nombre: no debe estar vacío
-- Teléfono: si se proporciona, debe contener solo dígitos (0-9)
-- Email: sin validación (cualquier cadena aceptada)
-
-**Manejo de Errores**:
-- Nombre vacío → mostrar error, retornar lista sin cambios
-- Teléfono inválido → volver a solicitar hasta que sea válido
-- Fallo al guardar → mensaje de error desde capa de base de datos
-
-**Persistencia**: Llama a `save_contacts()` después de agregar exitosamente
-
-**Valor de Retorno**: Lista de contactos actualizada
+1. Solicitar nombre; si está vacío, mostrar error y volver al menú
+2. Solicitar teléfono y email, repitiendo si el formato es inválido
+3. Si el teléfono o email están en uso, pedir confirmación
+4. Crear el contacto con el servicio
+5. Guardar en el archivo JSON
+6. Mostrar éxito solo si se guardó
 
 ### 4.2 Leer Todos los Contactos
 
-**Función**: `view_all_contacts(contacts)`
+**Flujo**: `view_all_contacts_flow(contacts)`
 
 **Historia de Usuario**: Como usuario, quiero ver todos mis contactos en una lista.
 
-**Flujo de Trabajo**:
-1. Mostrar encabezado de sección
-2. Verificar si la lista de contactos está vacía
-3. Si está vacía: mostrar "No se encontraron contactos"
-4. Si no está vacía: formatear y mostrar todos los contactos
-5. Retornar lista sin cambios
-
 **Formato de Visualización**:
 ```
-[ID] Nombre
-    Teléfono: <teléfono>
-    Email: <email>
-```
-
-**Ejemplo de Salida**:
-```
---- TODOS LOS CONTACTOS ---
-
 [1] John Doe
-    Teléfono: 1234567890
+    Phone: 1234567890
     Email: john@example.com
-
-[2] Jane Smith
-    Teléfono: No proporcionado
-    Email: jane@example.com
 ```
 
-**Valor de Retorno**: Lista de contactos sin cambios (operación de solo lectura)
+### 4.3 Buscar Contactos
 
-### 4.3 Leer Contacto Individual (Buscar)
+**Servicio**: `search_contacts(contacts, query)`
 
-**Función**: `search_contact(contacts)`
+**Flujo**: `search_contacts_flow(contacts)`
 
-**Historia de Usuario**: Como usuario, quiero buscar un contacto específico por ID.
-
-**Flujo de Trabajo**:
-1. Mostrar encabezado de sección
-2. Verificar si la lista de contactos está vacía
-3. Solicitar ID de contacto (entero)
-4. Buscar índice del contacto
-5. Si no se encuentra: mostrar mensaje de error
-6. Si se encuentra: formatear y mostrar detalles del contacto
-7. Retornar lista sin cambios
-
-**Formato de Visualización**:
-```
-ID: 1
-Nombre: John Doe
-Teléfono: 1234567890
-Email: john@example.com
---------------------------------------------------
-```
+**Historia de Usuario**: Como usuario, quiero encontrar contactos por ID, nombre, teléfono o correo electrónico.
 
 **Casos de Error**:
-- Lista vacía → "No hay contactos disponibles"
-- ID no encontrado → "No se encontró contacto con ID X"
-- Entrada de ID inválida → volver a solicitar entero válido
-
-**Valor de Retorno**: Lista de contactos sin cambios (operación de solo lectura)
+- Lista vacía → "No contacts available."
+- Búsqueda vacía → "Search text cannot be empty."
+- Sin coincidencias → "No contacts match '{query}'."
 
 ### 4.4 Actualizar Contacto
 
-**Función**: `update_contact(contacts)`
+**Servicio**: `update_contact(contacts, contact_id, name=None, phone=None, email=None)` → `(lista_nueva, contacto)`
 
-**Historia de Usuario**: Como usuario, quiero actualizar la información de un contacto.
+**Flujo**: `update_contact_flow(contacts)`
 
-**Flujo de Trabajo**:
-1. Mostrar encabezado de sección
-2. Verificar si la lista de contactos está vacía
-3. Solicitar ID de contacto
-4. Buscar índice del contacto
-5. Si no se encuentra: mostrar error, retornar
-6. Mostrar información actual del contacto
-7. Solicitar nuevo nombre (vacío = mantener actual)
-8. Si se proporciona nombre: actualizar campo de nombre
-9. Solicitar nuevo teléfono (vacío = mantener actual)
-10. Si se proporciona teléfono: validar y actualizar campo de teléfono
-11. Solicitar nuevo email (vacío = mantener actual)
-12. Si se proporciona email: actualizar campo de email
-13. Guardar en archivo JSON
-14. Mostrar mensaje de éxito
+**Historia de Usuario**: Como usuario, quiero actualizar o vaciar la información de un contacto.
 
-**Reglas de Actualización**:
-- Entrada vacía → mantener valor actual
-- Entrada no vacía → reemplazar valor actual
-- La validación de teléfono aún aplica si se proporciona
+**Valores en el Servicio**:
 
-**Ejemplo de Interacción**:
-```
-Ingrese nuevos valores (presione Enter para mantener actual):
-Nombre: [Enter]              → mantiene nombre actual
-Teléfono (solo dígitos): 999 → actualiza teléfono a "999"
-Email: [Enter]               → mantiene email actual
-```
+| Valor del parámetro | Efecto |
+|---------------------|--------|
+| `None` | Mantiene el valor actual |
+| `""` en teléfono o email | Vacía el campo ("Not provided") |
+| `""` en nombre | `ValueError` |
+| Otro valor | Valida y reemplaza |
 
-**Persistencia**: Llama a `save_contacts()` después de actualización exitosa
+**Respuestas en la Consola**:
 
-**Valor de Retorno**: Lista de contactos actualizada
+| Respuesta | Efecto |
+|-----------|--------|
+| Enter | Mantiene el valor actual |
+| `-` en teléfono o email | Vacía el campo |
+| Otro valor | Valida y reemplaza |
+
+Si no se ingresa ningún cambio, se muestra "No changes made." y no se guarda.
 
 ### 4.5 Eliminar Contacto
 
-**Función**: `delete_contact(contacts)`
+**Servicio**: `delete_contact(contacts, contact_id)` → `(lista_nueva, contacto_eliminado)`
+
+**Flujo**: `delete_contact_flow(contacts)`
 
 **Historia de Usuario**: Como usuario, quiero eliminar un contacto después de confirmar.
 
-**Flujo de Trabajo**:
-1. Mostrar encabezado de sección
-2. Verificar si la lista de contactos está vacía
-3. Solicitar ID de contacto
-4. Buscar índice del contacto
-5. Si no se encuentra: mostrar error, retornar
-6. Mostrar contacto a eliminar
-7. Solicitar confirmación (sí/no)
-8. Si se confirma: remover de lista, guardar, mostrar éxito
-9. Si no se confirma: mostrar mensaje de cancelación
-
 **Lógica de Confirmación**:
 - Aceptado: "yes", "y" (insensible a mayúsculas)
-- Rechazado: cualquier otra cosa
+- Rechazado: cualquier otra respuesta
 
-**Ejemplo de Interacción**:
-```
-Contacto a eliminar:
-ID: 3
-Nombre: Bob Wilson
-...
-¿Está seguro? (yes/no): yes
-Contacto 'Bob Wilson' eliminado.
-```
+### 4.6 Exportar a CSV
 
-**Persistencia**: Llama a `save_contacts()` solo si la eliminación fue confirmada
+**Flujo**: `export_contacts_flow(contacts)`
 
-**Valor de Retorno**: Lista de contactos actualizada (o sin cambios si fue cancelada)
+**Historia de Usuario**: Como usuario, quiero abrir mis contactos en una hoja de cálculo.
+
+Ver el formato en [03_database.md](03_database.md).
 
 ## 5. Reglas de Validación
 
+Los validadores están en `app/utils/validators.py`. Son funciones puras: la interfaz los usa para volver a preguntar y los servicios para rechazar datos inválidos.
+
 ### 5.1 Validación de Nombre
 
-**Regla**: El nombre no debe estar vacío
+**Función**: `is_valid_name(name)`
 
-**Capa**: Servicios
+**Regla**: Debe contener caracteres visibles.
 
-**Implementación**:
-```python
-name = prompt_string("Nombre: ")
-if not name:
-    print_error("El nombre no puede estar vacío.")
-    return contacts
-```
-
-**Mensaje de Error**: "El nombre no puede estar vacío."
+**Mensaje de Error**: "Name cannot be empty."
 
 ### 5.2 Validación de Teléfono
 
-**Regla**: El teléfono debe contener solo dígitos (0-9)
+**Función**: `is_valid_phone(phone)`
 
-**Capa**: Utilidades (validador reutilizable)
+**Regla**: Solo dígitos ASCII (0-9). Rechaza dígitos de otros alfabetos, que `str.isdigit()` acepta por sí solo.
 
-**Implementación**:
 ```python
-def prompt_phone_digits(message, allow_empty):
-    while True:
-        phone = input(message).strip()
-        if allow_empty and phone == "":
-            return ""
-        if phone.isdigit():
-            return phone
-        print("Error: El teléfono debe contener solo dígitos (0-9).")
+def is_valid_phone(phone):
+    return phone.isascii() and phone.isdigit()
 ```
 
-**Modos**:
-- Agregar contacto: `allow_empty=True` (vacío → "No proporcionado")
-- Actualizar contacto: `allow_empty=True` (vacío → mantener actual)
-
-**Mensaje de Error**: "El teléfono debe contener solo dígitos (0-9)."
+**Mensaje de Error**: "Phone must contain digits only (0-9)."
 
 ### 5.3 Validación de Email
 
-**Regla**: Sin validación (cualquier cadena aceptada)
+**Función**: `is_valid_email(email)`
 
-**Justificación**: La validación de formato de email está fuera del alcance de esta versión
+**Regla**: Forma `nombre@dominio.tld`, sin espacios y con una sola `@`. No comprueba que la dirección exista.
+
+**Mensaje de Error**: "Email must have the form name@domain.com."
 
 ### 5.4 Validación de ID
 
-**Regla**: El ID debe ser un entero válido
+**Función**: `parse_contact_id(raw_id)`
 
-**Capa**: Interfaz
+**Regla**: Entero positivo escrito solo con dígitos ASCII. Rechaza `0`, `-1` y `1_2`.
 
-**Implementación**:
-```python
-def prompt_int(message):
-    while True:
-        raw = input(message).strip()
-        try:
-            return int(raw)
-        except ValueError:
-            print("Error: Por favor ingrese un entero válido.")
-```
-
-**Mensaje de Error**: "Por favor ingrese un entero válido."
+**Mensaje de Error**: "Please enter a positive whole number."
 
 ## 6. Estrategia de Manejo de Errores
 
 ### 6.1 Errores de Entrada
 
-**Estrategia**: Bucle de reintento con mensajes de error claros
+**Estrategia**: Volver a solicitar con un mensaje claro
 
-**Ejemplos**:
-- Entero inválido → volver a solicitar
-- Teléfono inválido → volver a solicitar
-- Nombre vacío → abortar operación
+- ID, teléfono o email inválido → volver a solicitar
+- Nombre vacío al agregar → volver al menú
 
 ### 6.2 Errores de No Encontrado
 
-**Estrategia**: Mostrar mensaje informativo y retornar
+**Estrategia**: Mostrar un mensaje informativo y volver al menú
 
-**Ejemplos**:
-- ID de contacto no encontrado → "No se encontró contacto con ID X"
-- Lista de contactos vacía → "No hay contactos disponibles"
+- ID no encontrado → "Contact with ID {id} not found."
+- Lista vacía → "No contacts available."
 
 ### 6.3 Errores de Persistencia
 
-**Estrategia**: Delegar a capa de base de datos
-
-**Ejemplos**:
-- Fallo al guardar → mensaje de error de `save_contacts()`
-- Fallo al cargar → mensaje de error de `load_contacts()`
+| Error | Comportamiento |
+|-------|----------------|
+| Falla un guardado | Muestra el error, descarta el cambio y no informa éxito |
+| Falla la exportación | Muestra el error; los contactos no cambian |
+| Archivo dañado al iniciar | Lo conserva como respaldo y advierte antes del menú |
+| Archivo ilegible al iniciar | Muestra el error y se cierra con código 1 sin tocar el archivo |
 
 ### 6.4 Cancelación de Usuario
 
-**Estrategia**: Permitir salida elegante de operaciones
-
-**Ejemplos**:
-- Confirmación de eliminación rechazada → "Eliminación cancelada"
-- Entrada vacía durante agregar → abortar y volver al menú
+- Confirmación de eliminación rechazada → "Deletion cancelled."
+- Duplicado rechazado → "Contact not added." o "Contact not updated."
+- Ctrl+C o fin de la entrada → despedida y salida con código 0. Los cambios confirmados ya están guardados.
 
 ## 7. Diagramas de Flujo de Datos
 
-Ver: [diagrams/sequence.puml](diagrams/sequence.puml)
+### 7.1 Agregar Contacto
 
-### 7.1 Flujo de Agregar Contacto
-```
-Usuario → Interfaz → Servicio → Modelo → Servicio → Base de Datos
-                                              → Interfaz → Usuario
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant F as contact_flows
+    participant S as contacts_service
+    participant D as json_store
+    U->>F: Nombre, teléfono y email
+    F->>S: find_duplicates()
+    S-->>F: Coincidencias
+    opt Hay coincidencias
+        F->>U: ¿Guardar de todos modos?
+        U-->>F: Respuesta
+    end
+    F->>S: add_contact()
+    S-->>F: Lista nueva y contacto
+    F->>D: save_contacts()
+    alt Guardado correcto
+        F-->>U: Contacto agregado
+    else OSError
+        F-->>U: Error, lista anterior conservada
+    end
 ```
 
-### 7.2 Flujo de Buscar Contacto
-```
-Usuario → Interfaz → Servicio → [Buscar] → Helpers → Interfaz → Usuario
+### 7.2 Eliminar Contacto
+
+```mermaid
+sequenceDiagram
+    actor U as Usuario
+    participant F as contact_flows
+    participant S as contacts_service
+    participant D as json_store
+    U->>F: ID
+    F->>S: find_contact_by_id()
+    S-->>F: Contacto
+    F->>U: ¿Está seguro?
+    U-->>F: yes
+    F->>S: delete_contact()
+    S-->>F: Lista nueva y contacto
+    F->>D: save_contacts()
+    alt Guardado correcto
+        F-->>U: Contacto eliminado
+    else OSError
+        F-->>U: Error, el contacto se conserva
+    end
 ```
 
-### 7.3 Flujo de Actualizar Contacto
-```
-Usuario → Interfaz → Servicio → [Buscar] → Interfaz → Usuario
-                          ↓
-                    [Actualizar] → Base de Datos
-                          ↓
-                     Interfaz → Usuario
-```
+### 7.3 Inicio de la Aplicación
 
-### 7.4 Flujo de Eliminar Contacto
-```
-Usuario → Interfaz → Servicio → [Buscar] → Interfaz → Usuario (¿confirmar?)
-                          ↓                              ↓
-                    [Eliminar] ←─────────── Interfaz ← Usuario (sí)
-                          ↓
-                     Base de Datos
-                          ↓
-                     Interfaz → Usuario
+```mermaid
+flowchart TD
+    A[Iniciar] --> B{¿Existe contacts.json?}
+    B -- No --> C[Lista vacía]
+    B -- Sí --> D{¿Se puede leer?}
+    D -- No --> E[Mostrar error y salir con código 1]
+    D -- Sí --> F{¿Es un arreglo JSON válido?}
+    F -- No --> G[Mover a respaldo y advertir]
+    G --> C
+    F -- Sí --> H{¿Todos los registros son recuperables?}
+    H -- Sí --> I[Normalizar]
+    H -- No --> J[Mover a respaldo, guardar los válidos y advertir]
+    C --> K[Menú principal]
+    I --> K
+    J --> K
 ```
 
 ## 8. Resumen de Reglas de Negocio
 
 | Regla  | Descripción | Punto de Aplicación |
 |--------|-------------|---------------------|
-| RN-001 | El contacto debe tener un ID único | `generate_id()` |
-| RN-002 | Los IDs nunca se reutilizan | `generate_id()` |
-| RN-003 | El nombre es requerido | `add_contact()` |
-| RN-004 | El teléfono debe ser solo dígitos si se proporciona | `prompt_phone_digits()` |
-| RN-005 | Teléfono vacío → "No proporcionado" | `create_contact()` |
-| RN-006 | Email vacío → "No proporcionado" | `create_contact()` |
-| RN-007 | Eliminar requiere confirmación | `delete_contact()` |
-| RN-008 | Entrada vacía en actualización → mantener actual | `update_contact()` |
-| RN-009 | Todos los cambios se auto-guardan a JSON | Todas las operaciones mutantes |
+| RN-001 | El contacto debe tener un ID único | `generate_id()`, `normalize_contacts()` |
+| RN-002 | El nombre es requerido | `add_contact()`, `update_contact()` |
+| RN-003 | El teléfono debe ser solo dígitos 0-9 si se ingresa | `is_valid_phone()` |
+| RN-004 | El email debe tener formato válido si se ingresa | `is_valid_email()` |
+| RN-005 | Teléfono o email vacío → "Not provided" | `create_contact()`, `update_contact()` |
+| RN-006 | Eliminar requiere confirmación | `delete_contact_flow()` |
+| RN-007 | Entrada vacía en actualización → mantener actual | `update_contact_flow()` |
+| RN-008 | `-` en teléfono o email → vaciar el campo | `update_contact_flow()` |
+| RN-009 | Teléfono o email en uso → confirmación | `find_duplicates()`, `_confirm_if_duplicate()` |
+| RN-010 | Los cambios se guardan automáticamente; si falla, se descartan | `_persist()` |
 
-## 9. Dependencias de Servicios
+## 9. Dependencias
 
 ```
 contacts_service.py importa:
-├── app.configs.settings (constantes)
+├── app.configs.settings (NOT_PROVIDED)
+├── app.models.contact (Contact, create_contact)
+└── app.utils.validators (is_valid_email, is_valid_name, is_valid_phone)
+
+contact_flows.py importa:
+├── app.configs.settings (CLEAR_FIELD_VALUE)
+├── app.db.csv_export (export_contacts_csv)
 ├── app.db.json_store (save_contacts)
 ├── app.helpers.formatters (format_contact, format_contact_list)
-├── app.interface.menu (todas las funciones de E/S)
-├── app.models.contact (create_contact)
-└── app.utils.validators (prompt_phone_digits)
+├── app.interface.menu (funciones de E/S)
+├── app.models.contact (Contact)
+├── app.services.contacts_service
+└── app.utils.validators (is_valid_email, is_valid_phone)
 ```
 
-## 10. Consideraciones de Pruebas
+## 10. Pruebas
 
-### 10.1 Objetivos de Pruebas Unitarias
+Las pruebas usan `unittest`, de la biblioteca estándar, y datos ficticios.
 
-- `generate_id()` con lista vacía
-- `generate_id()` con contactos existentes
-- `generate_id()` después de eliminaciones (espacios)
-- `find_contact_index_by_id()` caso encontrado
-- `find_contact_index_by_id()` caso no encontrado
+```bash
+python -m unittest discover -s tests -t .
+```
 
-### 10.2 Escenarios de Pruebas de Integración
-
-- Agregar contacto → verificar guardado en JSON
-- Actualizar contacto → verificar cambios persistidos
-- Eliminar contacto → verificar eliminado de JSON
-- Buscar por ID inválido → verificar mensaje de error
-- Operaciones con lista vacía → verificar mensajes apropiados
-
-### 10.3 Casos Límite
-
-- Valor máximo de ID (desbordamiento de entero)
-- Caracteres Unicode en nombres
-- Cadenas de entrada muy largas
-- Caracteres especiales en email
-- Ceros a la izquierda en números de teléfono
+| Archivo | Cubre |
+|---------|-------|
+| `tests/test_contact.py` | Creación y normalización, reparación de IDs |
+| `tests/test_validators.py` | Nombre, teléfono, email e ID |
+| `tests/test_json_store.py` | Carga, respaldos, recuperación y guardado atómico, con archivos temporales |
+| `tests/test_csv_export.py` | Formato CSV y escape de fórmulas |
+| `tests/test_contacts_service.py` | CRUD, búsqueda, duplicados e inmutabilidad |
+| `tests/test_contact_flows.py` | Flujos interactivos y fallos de guardado, con entrada simulada |
+| `tests/test_main.py` | Bucle del menú, Ctrl+C y errores al iniciar |

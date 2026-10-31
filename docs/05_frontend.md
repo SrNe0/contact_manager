@@ -2,11 +2,15 @@
 
 ## 1. Resumen
 
-El frontend del Contact Manager es una **interfaz de línea de comandos (CLI)** que proporciona una experiencia interactiva basada en menús. La capa de interfaz maneja toda la interacción del usuario, validación de entrada y formato de salida.
+El frontend del Contact Manager es una **interfaz de línea de comandos (CLI)** que proporciona una experiencia interactiva basada en menús. La capa de interfaz maneja toda la interacción del usuario y coordina los servicios con la persistencia.
+
+Los textos de la aplicación están en inglés. Este documento los muestra tal como aparecen en pantalla.
 
 ## 2. Arquitectura de Interfaz
 
-**Ubicación**: `app/interface/menu.py`
+**Ubicación**:
+- `app/interface/menu.py`: Menú, solicitudes de entrada y mensajes
+- `app/interface/contact_flows.py`: Flujo interactivo de cada opción del menú
 
 **Tipo**: Interfaz de terminal basada en texto
 
@@ -24,23 +28,23 @@ Ver: [wireframes/main_menu.txt](wireframes/main_menu.txt)
 ==================================================
                  CONTACT MANAGER
 ==================================================
-1. Agregar contacto
-2. Ver todos los contactos
-3. Buscar contacto
-4. Actualizar contacto
-5. Eliminar contacto
-6. Salir
+1. Add contact
+2. View all contacts
+3. Search contacts
+4. Update contact
+5. Delete contact
+6. Export to CSV
+7. Exit
 ==================================================
 
-Seleccione opción (1-6): _
+Select option (1-7): _
 ```
 
 **Especificaciones del Menú**:
-- Ancho: 50 caracteres (configurable vía MENU_WIDTH)
+- Ancho: 50 caracteres (configurable vía `MENU_WIDTH`)
 - Borde: Caracteres `=`
 - Título: Centrado usando método `.center()`
-- Opciones: Numeradas 1-6
-- Mensaje: Instrucción clara de selección
+- Opciones: Numeradas 1-7
 
 ### 3.2 Comportamiento del Menú
 
@@ -50,10 +54,10 @@ Seleccione opción (1-6): _
 3. El cursor espera en el mensaje de opción
 
 **Al Seleccionar**:
-1. El usuario ingresa un número (1-6)
-2. Si es 6: salir de la aplicación
+1. El usuario ingresa un número (1-7)
+2. Si es 7: salir de la aplicación
 3. Si es inválida: mostrar error, esperar Enter, volver a mostrar menú
-4. Si es válida: ejecutar acción correspondiente
+4. Si es válida: ejecutar el flujo correspondiente
 
 **Al Completar Acción**:
 1. Mostrar resultados de la operación
@@ -64,300 +68,208 @@ Seleccione opción (1-6): _
 
 ### 4.1 Pantalla de Bienvenida
 
-**Mostrada**: Al iniciar la aplicación (antes del primer menú)
+**Mostrada**: Sobre el primer menú, después de limpiar la pantalla, para que se pueda leer.
 
 ```
-¡Bienvenido a Contact Manager!
+Welcome to Contact Manager!
 
 [Aparece el menú principal]
 ```
 
-### 4.2 Pantalla de Agregar Contacto
+### 4.2 Advertencia al Iniciar
+
+**Mostrada**: Antes del primer menú si el archivo estaba dañado. Espera Enter para que la limpieza de pantalla no la borre.
 
 ```
---- AGREGAR NUEVO CONTACTO ---
-Nombre: _
+Warning: contacts.json is damaged and was not loaded. It was kept as
+contacts.json.corrupt-20260131-103000. Starting with an empty list.
+
+Press Enter to continue...
 ```
 
-**Flujo del Usuario**:
-1. Ingresar nombre (requerido)
-2. Ingresar teléfono (opcional, solo dígitos)
-3. Ingresar email (opcional)
-4. Ver mensaje de éxito
-5. Presionar Enter para volver al menú
+### 4.3 Agregar Contacto
+
+```
+--- ADD NEW CONTACT ---
+Name: John Doe
+Phone (digits only, optional): 1234567890
+Email (optional): john@example.com
+
+Contact 'John Doe' added successfully!
+
+Press Enter to continue...
+```
 
 **Mensajes de Validación**:
-- Nombre vacío: "Error: El nombre no puede estar vacío." → volver al menú
-- Teléfono inválido: "Error: El teléfono debe contener solo dígitos (0-9)." → volver a solicitar
+- Nombre vacío: "Error: Name cannot be empty." → volver al menú
+- Teléfono inválido: "Error: Phone must contain digits only (0-9)." → volver a solicitar
+- Email inválido: "Error: Email must have the form name@domain.com." → volver a solicitar
 
-**Mensaje de Éxito**:
+**Duplicado**:
 ```
-¡Contacto 'John Doe' agregado exitosamente!
-
-Presione Enter para continuar...
-```
-
-### 4.3 Pantalla de Ver Todos los Contactos
-
-```
---- TODOS LOS CONTACTOS ---
+Warning: This phone or email is already used by:
 
 [1] John Doe
-    Teléfono: 1234567890
+    Phone: 1234567890
+    Email: john@example.com
+
+Save anyway? (yes/no): _
+```
+
+### 4.4 Ver Todos los Contactos
+
+```
+--- ALL CONTACTS ---
+
+[1] John Doe
+    Phone: 1234567890
     Email: john@example.com
 
 [2] Jane Smith
-    Teléfono: No proporcionado
+    Phone: Not provided
     Email: jane@example.com
 
-Presione Enter para continuar...
+Press Enter to continue...
 ```
 
-**Estado Vacío**:
-```
---- TODOS LOS CONTACTOS ---
-No se encontraron contactos.
+**Estado Vacío**: "No contacts found."
 
-Presione Enter para continuar...
-```
-
-### 4.4 Pantalla de Buscar Contacto
+### 4.5 Buscar Contactos
 
 ```
---- BUSCAR CONTACTO ---
-Ingrese ID del contacto: _
+--- SEARCH CONTACTS ---
+Search by ID, name, phone or email: jo
+
+[1] John Doe
+    Phone: 1234567890
+    Email: john@example.com
+
+Press Enter to continue...
 ```
 
-**Caso Encontrado**:
+**Sin Coincidencias**: "No contacts match 'zzz'."
+
+**Búsqueda Vacía**: "Error: Search text cannot be empty."
+
+**Lista Vacía**: "No contacts available."
+
+### 4.6 Actualizar Contacto
+
 ```
+--- UPDATE CONTACT ---
+Enter contact ID: 1
+
+Current information:
+
 ID: 1
-Nombre: John Doe
-Teléfono: 1234567890
+Name: John Doe
+Phone: 1234567890
 Email: john@example.com
 --------------------------------------------------
 
-Presione Enter para continuar...
+Enter new values (press Enter to keep current, '-' to clear phone or email):
+Name: John Smith
+Phone (digits only): 9876543210
+Email: -
+
+Contact updated successfully!
+
+Press Enter to continue...
 ```
 
-**Caso No Encontrado**:
-```
-No se encontró contacto con ID 5.
+**Sin Cambios**: Si todas las respuestas están vacías, muestra "No changes made." y no guarda.
 
-Presione Enter para continuar...
-```
-
-**Caso Lista Vacía**:
-```
---- BUSCAR CONTACTO ---
-No hay contactos disponibles.
-
-Presione Enter para continuar...
-```
-
-### 4.5 Pantalla de Actualizar Contacto
+### 4.7 Eliminar Contacto
 
 ```
---- ACTUALIZAR CONTACTO ---
-Ingrese ID del contacto: _
-```
+--- DELETE CONTACT ---
+Enter contact ID: 1
 
-**Después de Ingresar ID**:
-```
-Información actual:
+Contact to delete:
 
 ID: 1
-Nombre: John Doe
-Teléfono: 1234567890
+Name: John Doe
+Phone: 1234567890
 Email: john@example.com
 --------------------------------------------------
-
-Ingrese nuevos valores (presione Enter para mantener actual):
-Nombre: _
+Are you sure? (yes/no): _
 ```
 
-**Continuación**:
-```
-Nombre: John Smith
-Teléfono (solo dígitos): _
-```
+**Confirmada**: "Contact 'John Doe' deleted."
+
+**Cancelada**: "Deletion cancelled."
+
+### 4.8 Exportar a CSV
 
 ```
-Teléfono (solo dígitos): 9876543210
-Email: _
+--- EXPORT TO CSV ---
+
+3 contact(s) exported to /ruta/del/proyecto/contacts_export.csv
+
+Press Enter to continue...
 ```
 
-```
-Email: johnsmith@example.com
-
-¡Contacto actualizado exitosamente!
-
-Presione Enter para continuar...
-```
-
-**Manteniendo Valores Actuales**:
-```
-Nombre: [Enter]                ← mantiene actual
-Teléfono (solo dígitos): [Enter] ← mantiene actual
-Email: [Enter]               ← mantiene actual
-
-¡Contacto actualizado exitosamente!
-```
-
-### 4.6 Pantalla de Eliminar Contacto
+### 4.9 Pantalla de Salida
 
 ```
---- ELIMINAR CONTACTO ---
-Ingrese ID del contacto: _
+Thank you for using Contact Manager!
 ```
 
-**Después de Ingresar ID**:
-```
-Contacto a eliminar:
+**Comportamiento**: La aplicación termina después de este mensaje. También aparece con Ctrl+C o al terminar la entrada estándar.
 
-ID: 1
-Nombre: John Doe
-Teléfono: 1234567890
-Email: john@example.com
---------------------------------------------------
-
-¿Está seguro? (yes/no): _
-```
-
-**Eliminación Confirmada**:
-```
-Contacto 'John Doe' eliminado.
-
-Presione Enter para continuar...
-```
-
-**Eliminación Cancelada**:
-```
-Eliminación cancelada.
-
-Presione Enter para continuar...
-```
-
-### 4.7 Pantalla de Salida
+### 4.10 Opción Inválida
 
 ```
-¡Gracias por usar Contact Manager!
+Invalid option. Please select 1-7.
+
+Press Enter to continue...
 ```
-
-**Comportamiento**: La aplicación termina después de este mensaje
-
-### 4.8 Pantalla de Opción Inválida
-
-```
-Opción inválida. Por favor seleccione 1-6.
-
-Presione Enter para continuar...
-```
-
-**Comportamiento**: Vuelve al menú principal después de Enter
 
 ## 5. Funciones de Entrada
+
+Todas están en `app/interface/menu.py`.
 
 ### 5.1 Entrada de Cadena
 
 **Función**: `prompt_string(message)`
 
-**Propósito**: Entrada genérica de cadena con recorte de espacios
+**Comportamiento**: Retorna la cadena sin espacios en los extremos (puede estar vacía).
 
-**Uso**:
-```python
-name = prompt_string("Nombre: ")
-email = prompt_string("Email (opcional): ")
-```
+### 5.2 Entrada de ID
 
-**Comportamiento**: Retorna cadena recortada (puede estar vacía)
+**Función**: `prompt_contact_id(message)`
 
-### 5.2 Entrada de Entero
-
-**Función**: `prompt_int(message)`
-
-**Propósito**: Entrada de entero validada con bucle de reintento
-
-**Uso**:
-```python
-contact_id = prompt_int("Ingrese ID del contacto: ")
-```
-
-**Comportamiento**:
-- Bucle hasta que se ingrese un entero válido
-- Muestra error en entrada inválida: "Error: Por favor ingrese un entero válido."
+**Comportamiento**: Repite hasta recibir un ID válido, usando `parse_contact_id()`. En una entrada inválida muestra "Error: Please enter a positive whole number."
 
 ### 5.3 Entrada de Confirmación
 
 **Función**: `prompt_confirmation(message)`
 
-**Propósito**: Confirmación sí/no
+**Retorna**: `True` si la respuesta es "yes" o "y" (insensible a mayúsculas).
+
+### 5.4 Entrada de Campo Opcional
+
+**Función**: `prompt_optional_field(message, is_valid, error_message, allow_clear=False)`
 
 **Uso**:
 ```python
-confirmation = prompt_confirmation("¿Está seguro? (yes/no): ")
-if confirmation in CONFIRM_YES_VALUES:
-    # proceder
-```
-
-**Comportamiento**: Retorna cadena en minúsculas y recortada
-
-**Valores Aceptados**: "yes", "y" (insensible a mayúsculas)
-
-### 5.4 Entrada de Teléfono
-
-**Función**: `prompt_phone_digits(message, allow_empty)`
-
-**Ubicación**: `app/utils/validators.py` (utilidad de validación)
-
-**Propósito**: Validación de número de teléfono
-
-**Uso**:
-```python
-phone = prompt_phone_digits("Teléfono (solo dígitos, opcional): ", allow_empty=True)
+phone = prompt_optional_field(
+    "Phone (digits only, optional): ",
+    is_valid_phone,
+    INVALID_PHONE_MESSAGE,
+)
 ```
 
 **Comportamiento**:
-- Si allow_empty=True y entrada es vacía: retorna ""
-- Si entrada contiene solo dígitos: retorna entrada
-- De lo contrario: muestra error y vuelve a solicitar
+- Entrada vacía o válida: la retorna
+- `-` con `allow_clear=True`: lo retorna
+- Otro valor: muestra el error y vuelve a solicitar
 
 ## 6. Funciones de Salida
 
-### 6.1 Imprimir Mensaje
-
-**Función**: `print_message(message)`
-
-**Propósito**: Mostrar información al usuario
-
-**Uso**:
-```python
-print_message("¡Contacto agregado exitosamente!")
-print_message("No se encontraron contactos.")
-```
-
-### 6.2 Imprimir Error
-
-**Función**: `print_error(message)`
-
-**Propósito**: Mostrar mensajes de error
-
-**Uso**:
-```python
-print_error("El nombre no puede estar vacío.")
-```
-
-**Formato**: `Error: {mensaje}`
-
-### 6.3 Esperar Enter
-
-**Función**: `wait_for_enter()`
-
-**Propósito**: Pausar hasta que el usuario presione Enter
-
-**Uso**:
-```python
-wait_for_enter()  # Muestra: "Presione Enter para continuar..."
-```
+- `print_message(message)`: Muestra información
+- `print_error(message)`: Muestra `Error: {message}`
+- `wait_for_enter()`: Muestra "Press Enter to continue..." y espera
 
 ## 7. Gestión de Pantalla
 
@@ -367,101 +279,83 @@ wait_for_enter()  # Muestra: "Presione Enter para continuar..."
 
 **Ubicación**: `app/utils/console.py`
 
-**Propósito**: Limpiar la visualización del terminal
-
 **Implementación**: Códigos de escape ANSI `\033[2J\033[H`
 
-**Compatibilidad**: Funciona en la mayoría de terminales modernos (Linux, macOS, Windows 10+)
-
-**Uso**:
-```python
-clear_screen()  # Limpia pantalla y mueve cursor a arriba-izquierda
-```
+**Compatibilidad**: Funciona en la mayoría de terminales modernos.
 
 ### 7.2 Visualización de Menú
 
 **Función**: `show_menu()`
 
-**Propósito**: Mostrar menú principal
-
 **Diseño**:
 - Borde superior (50 caracteres `=`)
 - Título centrado
 - Borde medio
-- 6 opciones numeradas
+- 7 opciones numeradas
 - Borde inferior
 
 ## 8. Patrones de Interacción del Usuario
 
 ### 8.1 Flujo de Operación Estándar
 
-```
-┌─────────────────────┐
-│  Limpiar Pantalla   │
-├─────────────────────┤
-│  Mostrar Menú       │
-├─────────────────────┤
-│  Obtener Elección   │
-├─────────────────────┤
-│  Ejecutar Acción    │
-├─────────────────────┤
-│  Mostrar Resultados │
-├─────────────────────┤
-│  Esperar Enter      │
-└─────────────────────┘
-        │
-        └──> Volver al inicio
+```mermaid
+flowchart TD
+    A[Limpiar pantalla] --> B[Mostrar menú]
+    B --> C[Obtener opción]
+    C --> D[Ejecutar flujo]
+    D --> E[Mostrar resultados]
+    E --> F[Esperar Enter]
+    F --> A
 ```
 
 ### 8.2 Flujo de Validación
 
-```
-┌──────────────────────┐
-│  Solicitar Entrada   │
-├──────────────────────┤
-│  Validar Entrada     │
-└──────┬───────────────┘
-       │
-       ├─ Válida ──> Retornar valor
-       │
-       └─ Inválida ──> Mostrar error
-                   └──> Volver al inicio
+```mermaid
+flowchart TD
+    A[Solicitar entrada] --> B{¿Es válida?}
+    B -- Sí --> C[Retornar valor]
+    B -- No --> D[Mostrar error]
+    D --> A
 ```
 
 ### 8.3 Flujo de Confirmación
 
-```
-┌──────────────────────┐
-│  Mostrar Elemento    │
-├──────────────────────┤
-│  Pedir Confirmación  │
-└──────┬───────────────┘
-       │
-       ├─ Sí ──> Proceder con acción
-       │
-       └─ No ──> Cancelar y retornar
+```mermaid
+flowchart TD
+    A[Mostrar elemento] --> B[Pedir confirmación]
+    B --> C{¿yes o y?}
+    C -- Sí --> D[Continuar con la acción]
+    C -- No --> E[Cancelar y volver al menú]
 ```
 
 ## 9. Mensajes de Error
 
 | Escenario | Mensaje |
 |-----------|---------|
-| Opción de menú inválida | "Opción inválida. Por favor seleccione 1-6." |
-| Entero inválido | "Error: Por favor ingrese un entero válido." |
-| Teléfono inválido | "Error: El teléfono debe contener solo dígitos (0-9)." |
-| Nombre vacío | "Error: El nombre no puede estar vacío." |
-| Contacto no encontrado | "No se encontró contacto con ID {id}." |
-| Sin contactos (buscar) | "No hay contactos disponibles." |
-| Sin contactos (ver) | "No se encontraron contactos." |
+| Opción de menú inválida | "Invalid option. Please select 1-7." |
+| ID inválido | "Error: Please enter a positive whole number." |
+| Teléfono inválido | "Error: Phone must contain digits only (0-9)." |
+| Email inválido | "Error: Email must have the form name@domain.com." |
+| Nombre vacío | "Error: Name cannot be empty." |
+| Búsqueda vacía | "Error: Search text cannot be empty." |
+| Contacto no encontrado | "Contact with ID {id} not found." |
+| Sin coincidencias | "No contacts match '{query}'." |
+| Sin contactos (ver) | "No contacts found." |
+| Sin contactos (otras opciones) | "No contacts available." |
+| Fallo al guardar | "Error: Could not save your changes, so they were undone. {detalle}" |
+| Fallo al exportar | "Error: Could not export contacts. {detalle}" |
+| Fallo al cargar | "Error: Could not load your contacts, so the app will close. {detalle}" |
 
 ## 10. Mensajes de Éxito
 
 | Operación | Mensaje |
 |-----------|---------|
-| Agregar contacto | "¡Contacto '{name}' agregado exitosamente!" |
-| Actualizar contacto | "¡Contacto actualizado exitosamente!" |
-| Eliminar contacto | "Contacto '{name}' eliminado." |
-| Cancelar eliminación | "Eliminación cancelada." |
+| Agregar contacto | "Contact '{name}' added successfully!" |
+| Actualizar contacto | "Contact updated successfully!" |
+| Eliminar contacto | "Contact '{name}' deleted." |
+| Exportar | "{n} contact(s) exported to {ruta}" |
+
+Estos mensajes aparecen solo después de un guardado o una exportación correctos.
 
 ## 11. Helpers de Formato
 
@@ -471,11 +365,10 @@ clear_screen()  # Limpia pantalla y mueve cursor a arriba-izquierda
 
 **Función**: `format_contact(contact)`
 
-**Salida**:
 ```
 ID: 1
-Nombre: John Doe
-Teléfono: 1234567890
+Name: John Doe
+Phone: 1234567890
 Email: john@example.com
 --------------------------------------------------
 ```
@@ -484,14 +377,13 @@ Email: john@example.com
 
 **Función**: `format_contact_list(contacts)`
 
-**Salida**:
 ```
 [1] John Doe
-    Teléfono: 1234567890
+    Phone: 1234567890
     Email: john@example.com
 
 [2] Jane Smith
-    Teléfono: No proporcionado
+    Phone: Not provided
     Email: jane@example.com
 ```
 
@@ -508,25 +400,21 @@ Email: john@example.com
 - Todas las interacciones vía teclado
 - No se requiere mouse
 - Tecla Enter para confirmación
+- Ctrl+C para salir en cualquier momento
 
 ### 12.3 Instrucciones Claras
 
 - Cada mensaje explica la entrada esperada
 - Los errores de validación explican qué salió mal
-- Los campos opcionales marcados como "(opcional)"
+- Los campos opcionales están marcados como "optional"
 
 ## 13. Requisitos del Terminal
 
 **Requisitos Mínimos**:
+- Python 3.9 o superior
 - Soporte de códigos de escape ANSI (limpieza de pantalla)
 - Codificación UTF-8 (caracteres internacionales)
 - Flujos estándar de entrada/salida
-
-**Entornos Probados**:
-- Terminales Linux (bash, zsh)
-- Terminal de macOS
-- Windows Terminal / PowerShell 7+
-- Símbolo del sistema de Windows (Windows 10+)
 
 ## 14. Wireframes
 
@@ -535,10 +423,6 @@ Ver: [wireframes/main_menu.txt](wireframes/main_menu.txt) para wireframes ASCII
 ## 15. Mejoras Futuras de UI (Fuera de Alcance)
 
 - Mensajes codificados por color (éxito=verde, error=rojo)
-- Indicadores de progreso para carga
 - Visualización de lista de contactos basada en tabla
 - Paginación para listas grandes de contactos
-- Búsqueda por nombre/email
 - Opciones de ordenamiento (por nombre, por ID)
-- Exportar a CSV/archivo de texto
-- Atajos de teclado (Ctrl+C para cancelar)
