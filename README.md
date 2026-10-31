@@ -7,7 +7,7 @@ Built with pure Python, a clean layered architecture, and storage that protects 
 
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![Dependencies: none](https://img.shields.io/badge/dependencies-none-2ea44f)
-![Tests: unittest](https://img.shields.io/badge/tests-unittest-2ea44f)
+[![Tests](https://github.com/SrNe0/contact_manager/actions/workflows/tests.yml/badge.svg)](https://github.com/SrNe0/contact_manager/actions/workflows/tests.yml)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
 [Quick Start](#quick-start) · [Features](#features) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Documentation](#documentation)
@@ -88,6 +88,7 @@ Each layer has a single responsibility and imports only the layers below it. Bus
 
 ```
 contact_manager/
+├── .github/workflows/    # Continuous integration
 ├── app/
 │   ├── configs/          # Constants and paths
 │   ├── models/           # Contact creation and normalization
@@ -114,12 +115,13 @@ The test suite uses the standard library's `unittest`, with temporary files and 
 python -m unittest discover -s tests -t .
 ```
 
+GitHub Actions runs the suite on every push to `main` and every pull request, on Linux and Windows with Python 3.12, 3.13, and 3.14.
+
 ## Code Standards
 
 - Functions and dictionaries only, with no classes in the application
 - PEP 8, type hints, and a maximum line length of 88 characters
 - Google-style docstrings on all public functions
-- Tested on Python 3.12 and 3.14
 
 ## Documentation
 

@@ -346,6 +346,8 @@ Las pruebas usan `unittest`, de la biblioteca estándar, y datos ficticios.
 python -m unittest discover -s tests -t .
 ```
 
+**Integración Continua**: GitHub Actions ejecuta estas pruebas en cada push a `main` y en cada pull request, en Linux y Windows con Python 3.12, 3.13 y 3.14. Ver `.github/workflows/tests.yml`.
+
 | Archivo | Cubre |
 |---------|-------|
 | `tests/test_contact.py` | Creación y normalización, reparación de IDs |
