@@ -34,11 +34,3 @@ contacts.json
 contacts.json.corrupt-*
 .contacts.json.*.tmp
 contacts_export.csv
-
-# Local assistant & internal tracking files (never commit)
-CLAUDE.md
-PROGRESS.md
-.claude/
-.gemini/
-.cursor/
-.agent/
