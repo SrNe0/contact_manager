@@ -1,148 +1,139 @@
+<div align="center">
+
 # Contact Manager CLI
 
-![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
-![Dependencies: none](https://img.shields.io/badge/dependencies-none-brightgreen)
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
+**A fast, dependable contact manager for your terminal.**
+Built with pure Python, a clean layered architecture, and storage that protects your data.
 
-A command-line contact management application built with Python using a layered architecture and safe JSON persistence.
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
+![Dependencies: none](https://img.shields.io/badge/dependencies-none-2ea44f)
+![Tests: unittest](https://img.shields.io/badge/tests-unittest-2ea44f)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+
+[Quick Start](#quick-start) · [Features](#features) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Documentation](#documentation)
+
+![Contact Manager demo: adding a contact, searching, a duplicate warning, and CSV export](docs/images/demo.gif)
+
+</div>
 
 ## Quick Start
 
+You only need Python 3.12 or higher. There is nothing else to install.
+
 ```bash
+git clone https://github.com/SrNe0/contact_manager.git
+cd contact_manager
 python -m app.main
-```
-
-Run this command from the project root.
-
-## Demo
-
-```text
-==================================================
-                 CONTACT MANAGER
-==================================================
-1. Add contact
-2. View all contacts
-3. Search contacts
-4. Update contact
-5. Delete contact
-6. Export to CSV
-7. Exit
-==================================================
-
-Select option (1-7): 3
-
---- SEARCH CONTACTS ---
-Search by ID, name, phone or email: jo
-
-[1] John Doe
-    Phone: 1234567890
-    Email: john@example.com
 ```
 
 ## Features
 
-- **Add contact**: Create contacts with a name, phone, and email
-- **View all contacts**: List all stored contacts
-- **Search contacts**: Find contacts by exact ID or partial name, phone, or email
-- **Update contact**: Change any field, or clear the phone or email with `-`
-- **Delete contact**: Remove contacts with confirmation
-- **Duplicate warning**: Confirm before saving a phone or email that is already in use
-- **CSV export**: Write contacts to `contacts_export.csv` for spreadsheets
-- **Safe persistence**: Atomic saves and automatic backups of damaged files
+| Feature | What it does |
+|---------|--------------|
+| **Contact management** | Add, view, update, and delete contacts, with confirmation before deleting |
+| **Flexible search** | Find contacts by exact ID or by part of a name, phone, or email |
+| **Input validation** | Checks phone and email formats and asks again when one is invalid |
+| **Duplicate warnings** | Asks before saving a phone or email that is already in use |
+| **Clear a field** | Enter `-` while updating to remove a phone or email |
+| **CSV export** | Writes `contacts_export.csv`, ready to open in a spreadsheet |
+| **Safe storage** | Saves atomically and keeps a backup of any damaged file |
 
-## Requirements
+## Screenshots
 
-- Python 3.12 or higher
-- No external dependencies (uses the Python standard library only)
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Search by any field</strong><br><br>
+      <img src="docs/images/search.png" alt="Search results for the text 'ar', matching two contacts">
+    </td>
+    <td width="50%" valign="top">
+      <strong>Validation that guides you</strong><br><br>
+      <img src="docs/images/validation.png" alt="Invalid phone and email rejected with clear errors, then the contact is added">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Duplicate warnings</strong><br><br>
+      <img src="docs/images/duplicate.png" alt="Warning that a phone number already belongs to another contact">
+    </td>
+    <td width="50%" valign="top">
+      <strong>Damaged files are never lost</strong><br><br>
+      <img src="docs/images/recovery.png" alt="Warning that a damaged contacts file was kept as a backup">
+    </td>
+  </tr>
+</table>
+
+## Your Data Is Protected
+
+Contacts are stored in `contacts.json` in the project root, whichever directory you run the app from. The file is created on the first save and updated after each change.
+
+| Situation | What the app does |
+|-----------|-------------------|
+| A save fails | Shows the error, undoes the change, and leaves the previous file intact |
+| The file is damaged | Keeps it as `contacts.json.corrupt-<timestamp>` and warns you |
+| Some records are damaged | Recovers the valid ones and keeps the original as a backup |
+| The file cannot be read | Shows the error and closes without touching the file |
+| You press Ctrl+C | Exits cleanly; every confirmed change is already saved |
+
+`contacts.json`, its backups, and `contacts_export.csv` hold personal data, so they are excluded from version control.
+
+## Architecture
+
+Each layer has a single responsibility and imports only the layers below it. Business logic never touches the console or files, so it can be tested on its own and reused by another interface.
+
+![Layered architecture diagram](docs/diagrams/architecture.png)
+
+<details>
+<summary><strong>Project structure</strong></summary>
+
+```
+contact_manager/
+├── app/
+│   ├── configs/          # Constants and paths
+│   ├── models/           # Contact creation and normalization
+│   ├── db/               # JSON persistence and CSV export
+│   ├── utils/            # Pure validators and console control
+│   ├── helpers/          # Display formatting
+│   ├── services/         # Pure business logic (CRUD, search, duplicates)
+│   ├── interface/        # Menus and interactive flows
+│   └── main.py           # Entry point and main loop
+├── docs/                 # Technical documentation, diagram, and images
+├── tests/                # Automated tests
+├── LICENSE
+├── requirements.txt      # Empty: no dependencies
+└── README.md
+```
+
+</details>
 
 ## Running the Tests
+
+The test suite uses the standard library's `unittest`, with temporary files and simulated input.
 
 ```bash
 python -m unittest discover -s tests -t .
 ```
 
-## Data Storage
+## Code Standards
 
-All contacts are stored in `contacts.json` in the project root, whichever directory you run the app from. The file is created on the first save and updated after each create, update, or delete operation.
-
-| Situation | What the app does |
-|-----------|-------------------|
-| A save fails | Shows the error, undoes the change, and keeps the previous file intact |
-| The file is damaged | Keeps it as `contacts.json.corrupt-<timestamp>` and warns you |
-| Some records are damaged | Recovers the valid ones and keeps the original as a backup |
-| The file cannot be read | Shows the error and closes without touching the file |
-
-`contacts.json`, its backups, and `contacts_export.csv` hold personal data, so they are excluded from version control.
+- Functions and dictionaries only, with no classes in the application
+- PEP 8, type hints, and a maximum line length of 88 characters
+- Google-style docstrings on all public functions
+- Tested on Python 3.12 and 3.14
 
 ## Documentation
 
-Comprehensive technical documentation is available in the `/docs` folder:
+Technical documentation is available in Spanish:
 
-- **[Requirements Specification](docs/01_requirements.md)** (Spanish) - Functional and non-functional requirements, assumptions, constraints
-- **[Architecture Documentation](docs/02_architecture.md)** (Spanish) - Layered architecture explanation, layer responsibilities, dependency rules
-- **[Database Documentation](docs/03_database.md)** (Spanish) - JSON persistence layer, data structure, schema, rationale
-- **[Backend Documentation](docs/04_backend.md)** (Spanish) - Business logic services, validation rules, CRUD operations, tests
-- **[Frontend Documentation](docs/05_frontend.md)** (Spanish) - CLI interface, menu flow, user interaction patterns
-
-### Diagrams
-
-- **[Architecture Diagram](docs/diagrams/architecture.png)** - Layered architecture diagram
-
-### Wireframes
-
-- **[Main Menu Wireframes](docs/wireframes/main_menu.txt)** - ASCII wireframes for all screens
-
-## Project Structure
-
-```
-root/
-├── app/
-│   ├── configs/          # Constants and settings
-│   ├── models/           # Contact data structures
-│   ├── db/               # JSON persistence and CSV export
-│   ├── utils/            # Pure validators and console utilities
-│   ├── helpers/          # Formatting helpers
-│   ├── services/         # Pure business logic (CRUD)
-│   ├── interface/        # CLI menus and interactive flows
-│   └── main.py           # Application entry point
-├── docs/                 # Technical documentation
-├── tests/                # Automated tests
-├── LICENSE               # MIT license
-├── requirements.txt      # Python dependencies (none)
-└── README.md             # This file
-```
-
-## Architecture
-
-![Layered architecture](docs/diagrams/architecture.png)
-
-The application follows a **layered architecture** pattern:
-
-1. **Configuration Layer**: Constants and paths
-2. **Model Layer**: Contact creation and normalization
-3. **Database Layer**: JSON persistence and CSV export
-4. **Utility Layer**: Pure validators and console control
-5. **Helper Layer**: Display formatting
-6. **Service Layer**: Business logic that never touches the console or files
-7. **Interface Layer**: User interaction and the flows that connect services with storage
-8. **Application Layer**: Main loop and entry point
-
-Each layer has a single responsibility and depends only on lower layers.
-
-## Code Style
-
-- No classes in the application (functional approach)
-- PEP 8 compliant, with type hints
-- 4-space indentation
-- Maximum line length: 88 characters
-- Google-style docstrings for all public functions
-
-## Validation
-
-- **Name**: Required, cannot be empty
-- **Phone**: Optional, must contain only digits (0-9) if provided
-- **Email**: Optional, must have the form `name@domain.com` if provided
+| Document | Contents |
+|----------|----------|
+| [Requirements](docs/01_requirements.md) | Functional and non-functional requirements, constraints |
+| [Architecture](docs/02_architecture.md) | Layers, dependency rules, data flow |
+| [Database](docs/03_database.md) | JSON schema, atomic saves, recovery, CSV format |
+| [Backend](docs/04_backend.md) | Services, validation rules, error handling, tests |
+| [Frontend](docs/05_frontend.md) | Menu flow, screens, and messages |
+| [Wireframes](docs/wireframes/main_menu.txt) | ASCII wireframes for every screen |
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE).
