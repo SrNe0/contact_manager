@@ -1,1 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDEs and editors (JetBrains PyCharm, VS Code, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+out/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Local contact data (personal information, never commit)
+contacts.json
+contacts.json.corrupt-*
+.contacts.json.*.tmp
+contacts_export.csv
+
+# Local assistant & internal tracking files (never commit)
+CLAUDE.md
+PROGRESS.md
+.claude/
+.gemini/
+.cursor/
+.agent/
