@@ -77,11 +77,53 @@ Contacts are stored in `contacts.json` in the project root, whichever directory 
 
 `contacts.json`, its backups, and `contacts_export.csv` hold personal data, so they are excluded from version control.
 
+### What Happens at Startup
+
+```mermaid
+flowchart TD
+    A([Start the app]) --> B{Does contacts.json exist?}
+    B -- No --> C[Start with an empty list]
+    B -- Yes --> D{Can it be read?}
+    D -- No --> E([Show the error and close])
+    D -- Yes --> F{Is it a valid JSON list?}
+    F -- No --> G[Keep the file as a backup and warn]
+    G --> C
+    F -- Yes --> H{Are all records recoverable?}
+    H -- Yes --> I[Repair missing fields and IDs]
+    H -- No --> J[Keep a backup, save the valid records, and warn]
+    C --> K([Show the menu])
+    I --> K
+    J --> K
+```
+
 ## Architecture
 
 Each layer has a single responsibility and imports only the layers below it. Business logic never touches the console or files, so it can be tested on its own and reused by another interface.
 
 ![Layered architecture diagram](docs/diagrams/architecture.png)
+
+### How a Change Is Saved
+
+Services return a new list instead of changing the current one, so a failed save simply keeps the previous list.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Flow as Interface
+    participant Service as Services
+    participant Store as Database
+    User->>Flow: Enter contact details
+    Flow->>Service: add_contact(contacts, ...)
+    Service-->>Flow: New list and contact
+    Flow->>Store: save_contacts(new list)
+    alt Save succeeds
+        Store-->>Flow: Temp file replaced the original
+        Flow-->>User: Contact added
+    else Save fails
+        Store-->>Flow: OSError, original file intact
+        Flow-->>User: Show the error and keep the previous list
+    end
+```
 
 <details>
 <summary><strong>Project structure</strong></summary>
