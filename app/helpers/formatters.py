@@ -5,17 +5,18 @@ This module provides functions to format contacts for display.
 """
 
 from app.configs.settings import MENU_WIDTH
+from app.models.contact import Contact
 
 
-def format_contact(contact):
+def format_contact(contact: Contact) -> str:
     """
     Formats a single contact for display.
 
     Args:
-        contact (dict): Contact information with keys: id, name, phone, email.
+        contact: Contact information with keys: id, name, phone, email.
 
     Returns:
-        str: Formatted string representation of the contact.
+        Formatted string representation of the contact.
     """
     lines = [
         f"\nID: {contact['id']}",
@@ -27,15 +28,15 @@ def format_contact(contact):
     return "\n".join(lines)
 
 
-def format_contact_list(contacts):
+def format_contact_list(contacts: list[Contact]) -> str:
     """
     Formats a list of contacts for display.
 
     Args:
-        contacts (list[dict]): List of contacts.
+        contacts: List of contacts.
 
     Returns:
-        str: Formatted string representation of all contacts.
+        Formatted string representation of all contacts.
     """
     lines = []
     for contact in contacts:

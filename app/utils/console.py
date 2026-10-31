@@ -5,7 +5,7 @@ This module provides utility functions for console operations.
 """
 
 
-def clear_screen():
+def clear_screen() -> None:
     """
     Clears the console screen using ANSI escape codes.
 

@@ -1,14 +1,23 @@
 """
 User interface and menu functions.
 
-This module handles all user interaction: displaying menus, prompting for
+This module handles basic user interaction: displaying menus, prompting for
 input, and reading user responses.
 """
 
-from app.configs.settings import MENU_WIDTH
+from typing import Callable
+
+from app.configs.settings import (
+    CLEAR_FIELD_VALUE,
+    CONFIRM_YES_VALUES,
+    MENU_MAX_OPTION,
+    MENU_MIN_OPTION,
+    MENU_WIDTH,
+)
+from app.utils.validators import parse_contact_id
 
 
-def show_menu():
+def show_menu() -> None:
     """
     Displays the main menu.
     """
@@ -17,89 +26,116 @@ def show_menu():
     print("=" * MENU_WIDTH)
     print("1. Add contact")
     print("2. View all contacts")
-    print("3. Search contact")
+    print("3. Search contacts")
     print("4. Update contact")
     print("5. Delete contact")
-    print("6. Exit")
+    print("6. Export to CSV")
+    print("7. Exit")
     print("=" * MENU_WIDTH)
 
 
-def prompt_menu_option():
+def prompt_menu_option() -> str:
     """
     Prompts the user to select a menu option.
 
     Returns:
-        str: The user's menu selection as a string.
+        The user's menu selection as a string.
     """
-    return input("\nSelect option (1-6): ").strip()
+    return input(f"\nSelect option ({MENU_MIN_OPTION}-{MENU_MAX_OPTION}): ").strip()
 
 
-def prompt_string(message):
+def prompt_string(message: str) -> str:
     """
     Prompts the user for a string input.
 
     Args:
-        message (str): Prompt message displayed to the user.
+        message: Prompt message displayed to the user.
 
     Returns:
-        str: The user's input, stripped of leading/trailing whitespace.
+        The user's input, stripped of leading/trailing whitespace.
     """
     return input(message).strip()
 
 
-def prompt_int(message):
+def prompt_contact_id(message: str) -> int:
     """
-    Prompts the user for an integer until a valid integer is provided.
+    Prompts the user for a contact ID until a valid one is provided.
 
     Args:
-        message (str): Prompt message displayed to the user.
+        message: Prompt message displayed to the user.
 
     Returns:
-        int: The validated integer provided by the user.
+        The validated contact ID.
     """
     while True:
-        raw = input(message).strip()
-        try:
-            return int(raw)
-        except ValueError:
-            print("Error: Please enter a valid integer.")
+        contact_id = parse_contact_id(input(message).strip())
+        if contact_id is not None:
+            return contact_id
+        print("Error: Please enter a positive whole number.")
 
 
-def prompt_confirmation(message):
+def prompt_optional_field(
+    message: str,
+    is_valid: Callable[[str], bool],
+    error_message: str,
+    allow_clear: bool = False,
+) -> str:
+    """
+    Prompts for an optional field until the value is valid or empty.
+
+    Args:
+        message: Prompt message displayed to the user.
+        is_valid: Function that validates a non-empty value.
+        error_message: Error displayed when the value is invalid.
+        allow_clear: If True, CLEAR_FIELD_VALUE is also accepted.
+
+    Returns:
+        The validated value, an empty string, or CLEAR_FIELD_VALUE if allowed.
+    """
+    while True:
+        value = input(message).strip()
+        if not value or is_valid(value):
+            return value
+        if allow_clear and value == CLEAR_FIELD_VALUE:
+            return value
+        print_error(error_message)
+
+
+def prompt_confirmation(message: str) -> bool:
     """
     Prompts the user for a yes/no confirmation.
 
     Args:
-        message (str): Confirmation message displayed to the user.
+        message: Confirmation message displayed to the user.
 
     Returns:
-        str: The user's response in lowercase and stripped.
+        True if the user answered with an accepted "yes" value.
     """
-    return input(message).lower().strip()
+    return input(message).lower().strip() in CONFIRM_YES_VALUES
 
 
-def wait_for_enter():
+def wait_for_enter() -> None:
     """
     Waits for the user to press Enter before continuing.
     """
     input("\nPress Enter to continue...")
 
 
-def print_message(message):
+def print_message(message: str) -> None:
     """
     Prints a message to the console.
 
     Args:
-        message (str): The message to print.
+        message: The message to print.
     """
     print(message)
 
 
-def print_error(message):
+def print_error(message: str) -> None:
     """
     Prints an error message to the console.
 
     Args:
-        message (str): The error message to print.
+        message: The error message to print.
     """
     print(f"Error: {message}")
