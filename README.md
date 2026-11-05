@@ -9,8 +9,9 @@ Built with pure Python, a clean layered architecture, and storage that protects 
 ![Dependencies: none](https://img.shields.io/badge/dependencies-none-2ea44f)
 [![Tests](https://github.com/SrNe0/contact_manager/actions/workflows/tests.yml/badge.svg)](https://github.com/SrNe0/contact_manager/actions/workflows/tests.yml)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
+[![Live demo](https://img.shields.io/badge/live%20demo-try%20it%20in%20your%20browser-3ddc97)](https://srne0.dev/contact-manager/)
 
-[Quick Start](#quick-start) · [Features](#features) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Documentation](#documentation)
+[Live Demo](https://srne0.dev/contact-manager/) · [Quick Start](#quick-start) · [Features](#features) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Documentation](#documentation)
 
 ![Contact Manager demo: adding a contact, searching, a duplicate warning, and CSV export](docs/images/demo.gif)
 
